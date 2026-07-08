@@ -1,0 +1,9 @@
+/node_modules
+/.next/
+/out/
+.env*.local
+*.tsbuildinfo
+.DS_Store
+
+# imported data files (contain business data, not source)
+*_import.csv
