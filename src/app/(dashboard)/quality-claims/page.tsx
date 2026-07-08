@@ -15,9 +15,10 @@ export default async function QualityClaimsPage() {
 
   const role = profile?.role ?? "viewer";
 
-  const [rowsRes, userProfilesRes] = await Promise.all([
+  const [rowsRes, userProfilesRes, customersRes] = await Promise.all([
     supabase.from("quality_claims").select("*").order("created_at", { ascending: false }).limit(300),
     supabase.from("user_profiles").select("id, full_name"),
+    supabase.from("sales_customers").select("id,code,name,zone_province,freight_baht_per_ton,credit_days").eq("active", true).order("code"),
   ]);
 
   const userNames: Record<string, string> = {};
@@ -26,6 +27,7 @@ export default async function QualityClaimsPage() {
   return (
     <QualityClaimClient
       initialRows={(rowsRes.data ?? []) as any[]}
+      customers={customersRes.data ?? []}
       currentUserId={user.id}
       currentUserName={profile?.full_name ?? user.email ?? ""}
       role={role}

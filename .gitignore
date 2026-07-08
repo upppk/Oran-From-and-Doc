@@ -7,3 +7,5 @@
 
 # imported data files (contain business data, not source)
 *_import.csv
+.vercel
+.env*

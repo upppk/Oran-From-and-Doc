@@ -6,9 +6,11 @@ import { Plus, Printer, Pencil, Trash2 } from "lucide-react";
 import QualityClaimForm from "./QualityClaimForm";
 import QualityClaimPrint from "./QualityClaimPrint";
 import { QualityClaimRow, QualityClaimStatus, STATUS_LABEL, parseItems } from "./types";
+import type { SalesCustomer } from "@/components/price-approval/types";
 
 interface Props {
   initialRows: QualityClaimRow[];
+  customers: SalesCustomer[];
   currentUserId: string;
   currentUserName: string;
   role: string;
@@ -20,7 +22,7 @@ function fmtDate(d: string | null) {
   return new Date(d).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" });
 }
 
-export default function QualityClaimClient({ initialRows, currentUserId, currentUserName, role, userNames }: Props) {
+export default function QualityClaimClient({ initialRows, customers, currentUserId, currentUserName, role, userNames }: Props) {
   const supabase = createClient();
   const [rows, setRows] = useState<QualityClaimRow[]>(initialRows);
   const [statusFilter, setStatusFilter] = useState<QualityClaimStatus | "all">("all");
@@ -147,7 +149,7 @@ export default function QualityClaimClient({ initialRows, currentUserId, current
 
       {formOpen && (
         <QualityClaimForm
-          row={editRow} currentUserId={currentUserId} currentUserName={currentUserName} role={role}
+          row={editRow} customers={customers} currentUserId={currentUserId} currentUserName={currentUserName} role={role}
           onClose={() => setFormOpen(false)}
           onSaved={(saved) => {
             setRows(prev => {

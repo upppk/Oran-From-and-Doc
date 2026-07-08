@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { X, Plus, Trash2, ImagePlus, Loader2 } from "lucide-react";
 import { ClaimItem, QualityClaimRow, parseItems, emptyItem } from "./types";
+import type { SalesCustomer } from "@/components/price-approval/types";
 
 const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500";
 
@@ -20,7 +21,7 @@ function todayStr() { return new Date().toISOString().slice(0, 10); }
 
 interface FormState {
   claim_no: string; claim_date: string; to_person: string;
-  shop_name: string; shop_phone: string; shop_address: string; department: string;
+  customer_code: string; shop_name: string; shop_phone: string; shop_address: string; department: string;
   items: ClaimItem[];
   roof_type: string; structure: string; damage_desc: string; damage_qty: string; purpose: string;
   factory_comment: string;
@@ -31,7 +32,7 @@ function toFormState(row: QualityClaimRow | null, defaultName: string): FormStat
   if (!row) {
     return {
       claim_no: "", claim_date: todayStr(), to_person: "ผู้จัดการโรงงาน",
-      shop_name: "", shop_phone: "", shop_address: "", department: "",
+      customer_code: "", shop_name: "", shop_phone: "", shop_address: "", department: "",
       items: [emptyItem(), emptyItem(), emptyItem()],
       roof_type: "", structure: "", damage_desc: "", damage_qty: "", purpose: "",
       factory_comment: "", submitted_by_name: defaultName, print_date: todayStr(),
@@ -40,6 +41,7 @@ function toFormState(row: QualityClaimRow | null, defaultName: string): FormStat
   const items = parseItems(row.items);
   return {
     claim_no: row.claim_no ?? "", claim_date: row.claim_date, to_person: row.to_person ?? "ผู้จัดการโรงงาน",
+    customer_code: row.customer_code ?? "",
     shop_name: row.shop_name ?? "", shop_phone: row.shop_phone ?? "", shop_address: row.shop_address ?? "", department: row.department ?? "",
     items: items.length ? items : [emptyItem(), emptyItem(), emptyItem()],
     roof_type: row.roof_type ?? "", structure: row.structure ?? "", damage_desc: row.damage_desc ?? "", damage_qty: row.damage_qty ?? "", purpose: row.purpose ?? "",
@@ -49,6 +51,7 @@ function toFormState(row: QualityClaimRow | null, defaultName: string): FormStat
 
 interface Props {
   row: QualityClaimRow | null;
+  customers: SalesCustomer[];
   currentUserId: string;
   currentUserName: string;
   role: string;
@@ -56,16 +59,21 @@ interface Props {
   onSaved: (row: QualityClaimRow) => void;
 }
 
-export default function QualityClaimForm({ row, currentUserId, currentUserName, role, onClose, onSaved }: Props) {
+export default function QualityClaimForm({ row, customers, currentUserId, currentUserName, role, onClose, onSaved }: Props) {
   const supabase = createClient();
   const [form, setForm] = useState<FormState>(() => toFormState(row, currentUserName));
   const [photoUrls, setPhotoUrls] = useState<string[]>(row?.photo_urls ?? []);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [custSuggest, setCustSuggest] = useState(false);
 
   function setField<K extends keyof FormState>(key: K, val: FormState[K]) {
     setForm(f => ({ ...f, [key]: val }));
+  }
+  function pickCustomer(c: SalesCustomer) {
+    setForm(f => ({ ...f, customer_code: c.code, shop_name: c.name }));
+    setCustSuggest(false);
   }
   function changeItem(i: number, field: keyof ClaimItem, val: string) {
     setForm(f => { const items = [...f.items]; items[i] = { ...items[i], [field]: val }; return { ...f, items }; });
@@ -99,6 +107,12 @@ export default function QualityClaimForm({ row, currentUserId, currentUserName, 
   const canEditRequest = !row || row.submitted_by === currentUserId || role === "admin";
   const canEditFactory = role === "factory" || role === "admin";
 
+  const custMatches = custSuggest
+    ? (form.shop_name
+        ? customers.filter(c => c.code.toLowerCase().includes(form.shop_name.toLowerCase()) || c.name.toLowerCase().includes(form.shop_name.toLowerCase())).slice(0, 30)
+        : customers.slice(0, 30))
+    : [];
+
   async function save(markResolved: boolean) {
     setSaving(true); setErr("");
     if (!form.shop_name.trim()) { setErr("กรุณากรอกชื่อร้าน"); setSaving(false); return; }
@@ -106,6 +120,7 @@ export default function QualityClaimForm({ row, currentUserId, currentUserName, 
     const items = form.items.filter(it => it.product_name.trim() || it.qty.trim());
     const payload: Record<string, unknown> = {
       claim_no: form.claim_no || null, claim_date: form.claim_date, to_person: form.to_person || null,
+      customer_code: form.customer_code || null,
       shop_name: form.shop_name.trim(), shop_phone: form.shop_phone || null, shop_address: form.shop_address || null, department: form.department || null,
       items,
       roof_type: form.roof_type || null, structure: form.structure || null, damage_desc: form.damage_desc || null,
@@ -149,8 +164,23 @@ export default function QualityClaimForm({ row, currentUserId, currentUserName, 
             <Field label="เรียน"><input disabled={!canEditRequest} className={inputCls} value={form.to_person} onChange={e => setField("to_person", e.target.value)} /></Field>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Field label="สถานที่พบ (ชื่อร้าน) *"><input required disabled={!canEditRequest} className={inputCls} value={form.shop_name} onChange={e => setField("shop_name", e.target.value)} /></Field>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative">
+            <Field label="สถานที่พบ (ชื่อร้าน) — พิมพ์ค้นหารหัส/ชื่อลูกค้า หรือกรอกเอง *">
+              <input required disabled={!canEditRequest} className={inputCls} value={form.shop_name}
+                onChange={e => { setField("shop_name", e.target.value); setField("customer_code", ""); setCustSuggest(true); }}
+                onFocus={() => setCustSuggest(true)}
+                onBlur={() => setTimeout(() => setCustSuggest(false), 150)} />
+              {custMatches.length > 0 && (
+                <div className="absolute z-10 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 w-full max-h-48 overflow-y-auto">
+                  {custMatches.map(c => (
+                    <button type="button" key={c.id} onMouseDown={() => pickCustomer(c)}
+                      className="block w-full text-left px-3 py-2 hover:bg-gray-50 text-sm">
+                      <span className="font-mono font-medium">{c.code}</span> — {c.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Field>
             <Field label="โทร"><input disabled={!canEditRequest} className={inputCls} value={form.shop_phone} onChange={e => setField("shop_phone", e.target.value)} /></Field>
           </div>
           <Field label="ที่อยู่"><input disabled={!canEditRequest} className={inputCls} value={form.shop_address} onChange={e => setField("shop_address", e.target.value)} /></Field>

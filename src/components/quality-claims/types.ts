@@ -10,6 +10,7 @@ export interface QualityClaimRow {
   claim_no: string | null;
   claim_date: string;
   to_person: string | null;
+  customer_code: string | null;
   shop_name: string | null;
   shop_phone: string | null;
   shop_address: string | null;
