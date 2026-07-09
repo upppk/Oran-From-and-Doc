@@ -6,6 +6,7 @@ import { Plus, Printer, Pencil, Trash2, Check, X as XIcon, FileDown } from "luci
 import PriceApprovalForm from "./PriceApprovalForm";
 import PriceApprovalPrint from "./PriceApprovalPrint";
 import { PriceApprovalRow, SalesProduct, SalesCustomer, PriceApprovalStatus, STATUS_LABEL, parseLines, computeTotals, lineAmount, lineWeightKg, bahtPerTon } from "./types";
+import { notifySubmittedForApproval, notifyPendingMarketing, notifyApproved, notifyRejected } from "@/lib/notify";
 
 interface Props {
   initialRows: PriceApprovalRow[];
@@ -71,6 +72,11 @@ export default function PriceApprovalClient({ initialRows, products, customers, 
     return false;
   }
 
+  function amountLineFor(r: PriceApprovalRow) {
+    const t = computeTotals(parseLines(r.lines));
+    return `จำนวนเงิน: ${t.total_amount.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท (${t.overall_baht_per_ton.toLocaleString("th-TH", { maximumFractionDigits: 2 })} บาท/ตัน)`;
+  }
+
   async function approve(r: PriceApprovalRow) {
     const isStage1 = r.status === "pending_area_head";
     const patch = isStage1
@@ -80,6 +86,11 @@ export default function PriceApprovalClient({ initialRows, products, customers, 
     if (!error && data) {
       setRows(prev => prev.map(x => x.id === r.id ? data as PriceApprovalRow : x));
       setViewRow(data as PriceApprovalRow);
+      if (isStage1) {
+        notifyPendingMarketing(r.doc_no, r.customer_name, amountLineFor(r));
+      } else if (r.created_by) {
+        notifyApproved(r.created_by, r.doc_no, r.customer_name, amountLineFor(r));
+      }
     }
   }
 
@@ -90,6 +101,7 @@ export default function PriceApprovalClient({ initialRows, products, customers, 
     }).eq("id", rejectFor.id).select("*").single();
     if (!error && data) {
       setRows(prev => prev.map(x => x.id === rejectFor.id ? data as PriceApprovalRow : x));
+      if (rejectFor.created_by) notifyRejected(rejectFor.created_by, rejectFor.doc_no, rejectFor.customer_name, rejectReason);
     }
     setRejectFor(null); setRejectReason("");
   }
@@ -274,11 +286,15 @@ export default function PriceApprovalClient({ initialRows, products, customers, 
           currentUserId={currentUserId} currentUserName={currentUserName}
           onClose={() => setFormOpen(false)}
           onSaved={(saved) => {
+            const wasPending = editRow?.status === "pending_area_head";
             setRows(prev => {
               const exists = prev.some(x => x.id === saved.id);
               return exists ? prev.map(x => x.id === saved.id ? saved : x) : [saved, ...prev];
             });
             setFormOpen(false);
+            if (saved.status === "pending_area_head" && !wasPending) {
+              notifySubmittedForApproval(saved.doc_no, saved.customer_name, amountLineFor(saved));
+            }
           }}
         />
       )}
