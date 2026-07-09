@@ -201,8 +201,8 @@ export default function QualityClaimForm({ row, customers, products, currentUser
                       : products.slice(0, 30))
                   : [];
                 return (
-                <div key={i} className="flex gap-2 items-center relative">
-                  <div className="flex-1 relative">
+                <div key={i} className="flex gap-2 items-center">
+                  <div className="flex-1 min-w-0 relative">
                     <input disabled={!canEditRequest} className={inputCls} placeholder="พิมพ์ค้นหารหัส/ชื่อสินค้า หรือกรอกเอง" value={it.product_name}
                       onChange={e => { changeItem(i, "product_name", e.target.value); setProductSuggestFor(i); }}
                       onFocus={() => setProductSuggestFor(i)}
@@ -218,7 +218,7 @@ export default function QualityClaimForm({ row, customers, products, currentUser
                       </div>
                     )}
                   </div>
-                  <input disabled={!canEditRequest} className={inputCls + " w-28 text-right"} placeholder="จำนวน" value={it.qty} onChange={e => changeItem(i, "qty", e.target.value)} />
+                  <input disabled={!canEditRequest} className={inputCls + " w-20 md:w-28 text-right shrink-0"} placeholder="จำนวน" value={it.qty} onChange={e => changeItem(i, "qty", e.target.value)} />
                   {canEditRequest && form.items.length > 1 && (
                     <button type="button" onClick={() => removeItem(i)} className="text-gray-400 hover:text-red-500 shrink-0"><Trash2 className="w-4 h-4" /></button>
                   )}
