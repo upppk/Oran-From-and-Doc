@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { X, Plus, Trash2, ImagePlus, Loader2 } from "lucide-react";
 import { ClaimItem, QualityClaimRow, parseItems, emptyItem } from "./types";
-import type { SalesCustomer } from "@/components/price-approval/types";
+import type { SalesCustomer, SalesProduct } from "@/components/price-approval/types";
 
 const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500";
 
@@ -52,6 +52,7 @@ function toFormState(row: QualityClaimRow | null, defaultName: string): FormStat
 interface Props {
   row: QualityClaimRow | null;
   customers: SalesCustomer[];
+  products: SalesProduct[];
   currentUserId: string;
   currentUserName: string;
   role: string;
@@ -59,7 +60,7 @@ interface Props {
   onSaved: (row: QualityClaimRow) => void;
 }
 
-export default function QualityClaimForm({ row, customers, currentUserId, currentUserName, role, onClose, onSaved }: Props) {
+export default function QualityClaimForm({ row, customers, products, currentUserId, currentUserName, role, onClose, onSaved }: Props) {
   const supabase = createClient();
   const [form, setForm] = useState<FormState>(() => toFormState(row, currentUserName));
   const [photoUrls, setPhotoUrls] = useState<string[]>(row?.photo_urls ?? []);
@@ -67,6 +68,7 @@ export default function QualityClaimForm({ row, customers, currentUserId, curren
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [custSuggest, setCustSuggest] = useState(false);
+  const [productSuggestFor, setProductSuggestFor] = useState<number | null>(null);
 
   function setField<K extends keyof FormState>(key: K, val: FormState[K]) {
     setForm(f => ({ ...f, [key]: val }));
@@ -192,15 +194,37 @@ export default function QualityClaimForm({ row, customers, currentUserId, curren
               {canEditRequest && <button type="button" onClick={addItem} className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 font-medium"><Plus className="w-3.5 h-3.5" /> เพิ่มรายการ</button>}
             </div>
             <div className="space-y-2">
-              {form.items.map((it, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <input disabled={!canEditRequest} className={inputCls} placeholder="ชื่อกระเบื้อง / รุ่น / สี" value={it.product_name} onChange={e => changeItem(i, "product_name", e.target.value)} />
+              {form.items.map((it, i) => {
+                const productMatches = productSuggestFor === i
+                  ? (it.product_name
+                      ? products.filter(p => p.code.toLowerCase().includes(it.product_name.toLowerCase()) || p.name.toLowerCase().includes(it.product_name.toLowerCase())).slice(0, 30)
+                      : products.slice(0, 30))
+                  : [];
+                return (
+                <div key={i} className="flex gap-2 items-center relative">
+                  <div className="flex-1 relative">
+                    <input disabled={!canEditRequest} className={inputCls} placeholder="พิมพ์ค้นหารหัส/ชื่อสินค้า หรือกรอกเอง" value={it.product_name}
+                      onChange={e => { changeItem(i, "product_name", e.target.value); setProductSuggestFor(i); }}
+                      onFocus={() => setProductSuggestFor(i)}
+                      onBlur={() => setTimeout(() => setProductSuggestFor(s => s === i ? null : s), 150)} />
+                    {productMatches.length > 0 && (
+                      <div className="absolute z-10 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 w-full max-h-48 overflow-y-auto">
+                        {productMatches.map(p => (
+                          <button type="button" key={p.id} onMouseDown={() => { changeItem(i, "product_name", p.name); setProductSuggestFor(null); }}
+                            className="block w-full text-left px-3 py-2 hover:bg-gray-50 text-sm">
+                            <span className="font-mono font-medium">{p.code}</span> — {p.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <input disabled={!canEditRequest} className={inputCls + " w-28 text-right"} placeholder="จำนวน" value={it.qty} onChange={e => changeItem(i, "qty", e.target.value)} />
                   {canEditRequest && form.items.length > 1 && (
                     <button type="button" onClick={() => removeItem(i)} className="text-gray-400 hover:text-red-500 shrink-0"><Trash2 className="w-4 h-4" /></button>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
