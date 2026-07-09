@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Plus, Trash2 } from "lucide-react";
 import { LineItemForm, SalesProduct, lineAmount, lineWeightKg, bahtPerTon } from "./types";
 
@@ -18,9 +19,59 @@ interface Props {
   readOnly?: boolean;
 }
 
-export default function LineItemGroup({ categoryCode, categoryLabel, lines, products, onChangeLine, onAddLine, onRemoveLine, onRemoveGroup, readOnly }: Props) {
-  const [suggestFor, setSuggestFor] = useState<string | null>(null);
+// Renders its dropdown via a portal anchored to the input's screen position, so it
+// isn't clipped by the table's horizontally-scrolling ancestor (overflow-x-auto).
+function ProductLookupInput({
+  value, placeholder, disabled, matches, onChange, onPick,
+}: {
+  value: string; placeholder: string; disabled?: boolean;
+  matches: SalesProduct[];
+  onChange: (val: string) => void;
+  onPick: (p: SalesProduct) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(false);
+  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
 
+  function openDropdown() {
+    const r = inputRef.current?.getBoundingClientRect();
+    if (r) setRect({ top: r.bottom, left: r.left, width: Math.max(r.width, 220) });
+    setOpen(true);
+  }
+
+  const showDropdown = open && matches.length > 0 && rect;
+
+  return (
+    <>
+      <input
+        ref={inputRef}
+        className={inputCls}
+        value={value}
+        disabled={disabled}
+        placeholder={placeholder}
+        onChange={e => { onChange(e.target.value); openDropdown(); }}
+        onFocus={openDropdown}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+      />
+      {showDropdown && createPortal(
+        <div
+          className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto"
+          style={{ top: rect.top + 4, left: rect.left, width: rect.width }}
+        >
+          {matches.map(p => (
+            <button type="button" key={p.id} onMouseDown={() => { onPick(p); setOpen(false); }}
+              className="block w-full text-left px-2 py-1.5 hover:bg-gray-50 text-xs">
+              <span className="font-mono font-medium">{p.code}</span> — {p.name}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
+export default function LineItemGroup({ categoryCode, categoryLabel, lines, products, onChangeLine, onAddLine, onRemoveLine, onRemoveGroup, readOnly }: Props) {
   const groupAmount = lines.reduce((s, l) => s + lineAmount(l), 0);
   const groupWeightKg = lines.reduce((s, l) => s + lineWeightKg(l), 0);
   const groupBahtPerTon = bahtPerTon(groupAmount, groupWeightKg);
@@ -30,7 +81,12 @@ export default function LineItemGroup({ categoryCode, categoryLabel, lines, prod
     onChangeLine(idx, "product_name", p.name);
     onChangeLine(idx, "weight_per_unit_kg", String(p.weight_per_unit_kg));
     onChangeLine(idx, "list_price", p.list_price != null ? String(p.list_price) : "");
-    setSuggestFor(null);
+  }
+
+  function matchesFor(query: string) {
+    return query
+      ? products.filter(p => p.code.toLowerCase().includes(query.toLowerCase()) || p.name.toLowerCase().includes(query.toLowerCase())).slice(0, 30)
+      : products.slice(0, 30);
   }
 
   return (
@@ -60,74 +116,44 @@ export default function LineItemGroup({ categoryCode, categoryLabel, lines, prod
             </tr>
           </thead>
           <tbody>
-            {lines.map((l, i) => {
-              const codeMatches = suggestFor === `${i}-code`
-                ? (l.product_code
-                    ? products.filter(p => p.code.toLowerCase().includes(l.product_code.toLowerCase()) || p.name.toLowerCase().includes(l.product_code.toLowerCase())).slice(0, 30)
-                    : products.slice(0, 30))
-                : [];
-              const nameMatches = suggestFor === `${i}-name`
-                ? (l.product_name
-                    ? products.filter(p => p.code.toLowerCase().includes(l.product_name.toLowerCase()) || p.name.toLowerCase().includes(l.product_name.toLowerCase())).slice(0, 30)
-                    : products.slice(0, 30))
-                : [];
-              return (
-                <tr key={i} className="border-t border-gray-100">
-                  <td className="px-2 py-1 relative">
-                    <input className={inputCls} value={l.product_code} disabled={readOnly}
-                      onChange={e => { onChangeLine(i, "product_code", e.target.value); setSuggestFor(`${i}-code`); }}
-                      onFocus={() => setSuggestFor(`${i}-code`)}
-                      onBlur={() => setTimeout(() => setSuggestFor(s => s === `${i}-code` ? null : s), 150)}
-                      placeholder="รหัส/พิมพ์ค้นหา" />
-                    {codeMatches.length > 0 && (
-                      <div className="absolute z-10 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 w-64 max-h-48 overflow-y-auto">
-                        {codeMatches.map(p => (
-                          <button type="button" key={p.id} onMouseDown={() => pickProduct(i, p)}
-                            className="block w-full text-left px-2 py-1.5 hover:bg-gray-50 text-xs">
-                            <span className="font-mono font-medium">{p.code}</span> — {p.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+            {lines.map((l, i) => (
+              <tr key={i} className="border-t border-gray-100">
+                <td className="px-2 py-1">
+                  <ProductLookupInput
+                    value={l.product_code} placeholder="รหัส/พิมพ์ค้นหา" disabled={readOnly}
+                    matches={matchesFor(l.product_code)}
+                    onChange={val => onChangeLine(i, "product_code", val)}
+                    onPick={p => pickProduct(i, p)}
+                  />
+                </td>
+                <td className="px-2 py-1">
+                  <ProductLookupInput
+                    value={l.product_name} placeholder="ชื่อสินค้า/พิมพ์ค้นหา" disabled={readOnly}
+                    matches={matchesFor(l.product_name)}
+                    onChange={val => onChangeLine(i, "product_name", val)}
+                    onPick={p => pickProduct(i, p)}
+                  />
+                </td>
+                <td className="px-2 py-1"><input className={inputCls + " text-right"} value={l.weight_per_unit_kg} disabled={readOnly}
+                  onChange={e => onChangeLine(i, "weight_per_unit_kg", e.target.value)} inputMode="decimal" /></td>
+                <td className="px-2 py-1"><input className={inputCls + " text-right"} value={l.qty} disabled={readOnly}
+                  onChange={e => onChangeLine(i, "qty", e.target.value)} inputMode="decimal" /></td>
+                <td className="px-2 py-1"><input className={inputCls + " text-right"} value={l.list_price} disabled={readOnly}
+                  onChange={e => onChangeLine(i, "list_price", e.target.value)} inputMode="decimal" /></td>
+                <td className="px-2 py-1"><input className={inputCls + " text-right"} value={l.discount_percent} disabled={readOnly}
+                  onChange={e => onChangeLine(i, "discount_percent", e.target.value)} inputMode="decimal" /></td>
+                <td className="px-2 py-1"><input className={inputCls + " text-right"} value={l.requested_unit_price} disabled={readOnly}
+                  onChange={e => onChangeLine(i, "requested_unit_price", e.target.value)} inputMode="decimal" /></td>
+                <td className="px-2 py-1 text-right tabular-nums text-gray-600">{lineAmount(l).toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
+                {!readOnly && (
+                  <td className="px-2 py-1">
+                    <button type="button" onClick={() => onRemoveLine(i)} className="text-gray-400 hover:text-red-500">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </td>
-                  <td className="px-2 py-1 relative">
-                    <input className={inputCls} value={l.product_name} disabled={readOnly}
-                      onChange={e => { onChangeLine(i, "product_name", e.target.value); setSuggestFor(`${i}-name`); }}
-                      onFocus={() => setSuggestFor(`${i}-name`)}
-                      onBlur={() => setTimeout(() => setSuggestFor(s => s === `${i}-name` ? null : s), 150)}
-                      placeholder="ชื่อสินค้า/พิมพ์ค้นหา" />
-                    {nameMatches.length > 0 && (
-                      <div className="absolute z-10 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 w-64 max-h-48 overflow-y-auto">
-                        {nameMatches.map(p => (
-                          <button type="button" key={p.id} onMouseDown={() => pickProduct(i, p)}
-                            className="block w-full text-left px-2 py-1.5 hover:bg-gray-50 text-xs">
-                            <span className="font-mono font-medium">{p.code}</span> — {p.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-2 py-1"><input className={inputCls + " text-right"} value={l.weight_per_unit_kg} disabled={readOnly}
-                    onChange={e => onChangeLine(i, "weight_per_unit_kg", e.target.value)} inputMode="decimal" /></td>
-                  <td className="px-2 py-1"><input className={inputCls + " text-right"} value={l.qty} disabled={readOnly}
-                    onChange={e => onChangeLine(i, "qty", e.target.value)} inputMode="decimal" /></td>
-                  <td className="px-2 py-1"><input className={inputCls + " text-right"} value={l.list_price} disabled={readOnly}
-                    onChange={e => onChangeLine(i, "list_price", e.target.value)} inputMode="decimal" /></td>
-                  <td className="px-2 py-1"><input className={inputCls + " text-right"} value={l.discount_percent} disabled={readOnly}
-                    onChange={e => onChangeLine(i, "discount_percent", e.target.value)} inputMode="decimal" /></td>
-                  <td className="px-2 py-1"><input className={inputCls + " text-right"} value={l.requested_unit_price} disabled={readOnly}
-                    onChange={e => onChangeLine(i, "requested_unit_price", e.target.value)} inputMode="decimal" /></td>
-                  <td className="px-2 py-1 text-right tabular-nums text-gray-600">{lineAmount(l).toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
-                  {!readOnly && (
-                    <td className="px-2 py-1">
-                      <button type="button" onClick={() => onRemoveLine(i)} className="text-gray-400 hover:text-red-500">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
+                )}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
