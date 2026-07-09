@@ -19,7 +19,7 @@ interface Props {
 }
 
 export default function LineItemGroup({ categoryCode, categoryLabel, lines, products, onChangeLine, onAddLine, onRemoveLine, onRemoveGroup, readOnly }: Props) {
-  const [suggestFor, setSuggestFor] = useState<number | null>(null);
+  const [suggestFor, setSuggestFor] = useState<string | null>(null);
 
   const groupAmount = lines.reduce((s, l) => s + lineAmount(l), 0);
   const groupWeightKg = lines.reduce((s, l) => s + lineWeightKg(l), 0);
@@ -61,22 +61,27 @@ export default function LineItemGroup({ categoryCode, categoryLabel, lines, prod
           </thead>
           <tbody>
             {lines.map((l, i) => {
-              const matches = suggestFor === i
+              const codeMatches = suggestFor === `${i}-code`
                 ? (l.product_code
                     ? products.filter(p => p.code.toLowerCase().includes(l.product_code.toLowerCase()) || p.name.toLowerCase().includes(l.product_code.toLowerCase())).slice(0, 30)
+                    : products.slice(0, 30))
+                : [];
+              const nameMatches = suggestFor === `${i}-name`
+                ? (l.product_name
+                    ? products.filter(p => p.code.toLowerCase().includes(l.product_name.toLowerCase()) || p.name.toLowerCase().includes(l.product_name.toLowerCase())).slice(0, 30)
                     : products.slice(0, 30))
                 : [];
               return (
                 <tr key={i} className="border-t border-gray-100">
                   <td className="px-2 py-1 relative">
                     <input className={inputCls} value={l.product_code} disabled={readOnly}
-                      onChange={e => { onChangeLine(i, "product_code", e.target.value); setSuggestFor(i); }}
-                      onFocus={() => setSuggestFor(i)}
-                      onBlur={() => setTimeout(() => setSuggestFor(s => s === i ? null : s), 150)}
+                      onChange={e => { onChangeLine(i, "product_code", e.target.value); setSuggestFor(`${i}-code`); }}
+                      onFocus={() => setSuggestFor(`${i}-code`)}
+                      onBlur={() => setTimeout(() => setSuggestFor(s => s === `${i}-code` ? null : s), 150)}
                       placeholder="รหัส/พิมพ์ค้นหา" />
-                    {matches.length > 0 && (
+                    {codeMatches.length > 0 && (
                       <div className="absolute z-10 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 w-64 max-h-48 overflow-y-auto">
-                        {matches.map(p => (
+                        {codeMatches.map(p => (
                           <button type="button" key={p.id} onMouseDown={() => pickProduct(i, p)}
                             className="block w-full text-left px-2 py-1.5 hover:bg-gray-50 text-xs">
                             <span className="font-mono font-medium">{p.code}</span> — {p.name}
@@ -85,9 +90,22 @@ export default function LineItemGroup({ categoryCode, categoryLabel, lines, prod
                       </div>
                     )}
                   </td>
-                  <td className="px-2 py-1">
+                  <td className="px-2 py-1 relative">
                     <input className={inputCls} value={l.product_name} disabled={readOnly}
-                      onChange={e => onChangeLine(i, "product_name", e.target.value)} placeholder="ชื่อสินค้า" />
+                      onChange={e => { onChangeLine(i, "product_name", e.target.value); setSuggestFor(`${i}-name`); }}
+                      onFocus={() => setSuggestFor(`${i}-name`)}
+                      onBlur={() => setTimeout(() => setSuggestFor(s => s === `${i}-name` ? null : s), 150)}
+                      placeholder="ชื่อสินค้า/พิมพ์ค้นหา" />
+                    {nameMatches.length > 0 && (
+                      <div className="absolute z-10 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 w-64 max-h-48 overflow-y-auto">
+                        {nameMatches.map(p => (
+                          <button type="button" key={p.id} onMouseDown={() => pickProduct(i, p)}
+                            className="block w-full text-left px-2 py-1.5 hover:bg-gray-50 text-xs">
+                            <span className="font-mono font-medium">{p.code}</span> — {p.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </td>
                   <td className="px-2 py-1"><input className={inputCls + " text-right"} value={l.weight_per_unit_kg} disabled={readOnly}
                     onChange={e => onChangeLine(i, "weight_per_unit_kg", e.target.value)} inputMode="decimal" /></td>
