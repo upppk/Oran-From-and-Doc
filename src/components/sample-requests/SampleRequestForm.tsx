@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { X, Plus, Trash2 } from "lucide-react";
 import { SampleItem, SampleRequestRow, parseItems, emptyItem } from "./types";
@@ -70,6 +70,26 @@ export default function SampleRequestForm({ row, products, currentUserId, curren
   function setField<K extends keyof FormState>(key: K, val: FormState[K]) {
     setForm(f => ({ ...f, [key]: val }));
   }
+
+  // Auto-generate เลขที่ as DD-MM-YYYY-### (running per day) for new requests.
+  useEffect(() => {
+    if (row) return;
+    let cancelled = false;
+    async function generateNo() {
+      const { count } = await supabase
+        .from("sample_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("request_date", form.request_date);
+      if (cancelled) return;
+      const [y, m, d] = form.request_date.split("-");
+      const seq = String((count ?? 0) + 1).padStart(3, "0");
+      setField("request_no", `${d}-${m}-${y}-${seq}`);
+    }
+    generateNo();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.request_date, row]);
+
   function changeItem(i: number, field: keyof SampleItem, val: string) {
     setForm(f => { const items = [...f.items]; items[i] = { ...items[i], [field]: val }; return { ...f, items }; });
   }
@@ -135,7 +155,7 @@ export default function SampleRequestForm({ row, products, currentUserId, curren
           )}
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <Field label="เลขที่ (ถ้ามี)"><input disabled={!canEditRequest} className={inputCls} value={form.request_no} onChange={e => setField("request_no", e.target.value)} /></Field>
+            <Field label="เลขที่ (รันอัตโนมัติ)"><input disabled className={inputCls + " bg-gray-50 text-gray-500"} value={form.request_no} /></Field>
             <Field label="วันที่"><input disabled={!canEditRequest} type="date" className={inputCls} value={form.request_date} onChange={e => setField("request_date", e.target.value)} /></Field>
             <Field label="ถึง (หัวหน้าคลังสินค้า)">
               <select disabled={!canEditRequest} className={inputCls} value={form.to_person} onChange={e => setField("to_person", e.target.value)}>
