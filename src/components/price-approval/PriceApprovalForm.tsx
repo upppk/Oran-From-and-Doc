@@ -230,6 +230,11 @@ export default function PriceApprovalForm({ row, products, customers, currentUse
                       <span className="font-mono font-medium">{c.code}</span> — {c.name}
                     </button>
                   ))}
+                  {customers.length > custMatches.length && (
+                    <p className="px-3 py-1.5 text-[11px] text-gray-400 border-t border-gray-100">
+                      แสดง {custMatches.length} จากทั้งหมด {customers.length.toLocaleString("th-TH")} รายการ — พิมพ์เพื่อค้นหาให้ตรงมากขึ้น
+                    </p>
+                  )}
                 </div>
               )}
             </Field>

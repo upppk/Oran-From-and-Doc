@@ -180,6 +180,11 @@ export default function QualityClaimForm({ row, customers, products, currentUser
                       <span className="font-mono font-medium">{c.code}</span> — {c.name}
                     </button>
                   ))}
+                  {customers.length > custMatches.length && (
+                    <p className="px-3 py-1.5 text-[11px] text-gray-400 border-t border-gray-100">
+                      แสดง {custMatches.length} จากทั้งหมด {customers.length.toLocaleString("th-TH")} รายการ — พิมพ์เพื่อค้นหาให้ตรงมากขึ้น
+                    </p>
+                  )}
                 </div>
               )}
             </Field>
@@ -215,6 +220,11 @@ export default function QualityClaimForm({ row, customers, products, currentUser
                             <span className="font-mono font-medium">{p.code}</span> — {p.name}
                           </button>
                         ))}
+                        {products.length > productMatches.length && (
+                          <p className="px-3 py-1.5 text-[11px] text-gray-400 border-t border-gray-100">
+                            แสดง {productMatches.length} จากทั้งหมด {products.length.toLocaleString("th-TH")} รายการ — พิมพ์เพื่อค้นหาให้ตรงมากขึ้น
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>

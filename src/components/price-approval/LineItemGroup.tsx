@@ -22,10 +22,11 @@ interface Props {
 // Renders its dropdown via a portal anchored to the input's screen position, so it
 // isn't clipped by the table's horizontally-scrolling ancestor (overflow-x-auto).
 function ProductLookupInput({
-  value, placeholder, disabled, matches, onChange, onPick,
+  value, placeholder, disabled, matches, totalCount, onChange, onPick,
 }: {
   value: string; placeholder: string; disabled?: boolean;
   matches: SalesProduct[];
+  totalCount: number;
   onChange: (val: string) => void;
   onPick: (p: SalesProduct) => void;
 }) {
@@ -64,6 +65,11 @@ function ProductLookupInput({
               <span className="font-mono font-medium">{p.code}</span> — {p.name}
             </button>
           ))}
+          {totalCount > matches.length && (
+            <p className="px-2 py-1.5 text-[11px] text-gray-400 border-t border-gray-100">
+              แสดง {matches.length} จากทั้งหมด {totalCount.toLocaleString("th-TH")} รายการ — พิมพ์เพื่อค้นหาให้ตรงมากขึ้น
+            </p>
+          )}
         </div>,
         document.body
       )}
@@ -121,7 +127,7 @@ export default function LineItemGroup({ categoryCode, categoryLabel, lines, prod
                 <td className="px-2 py-1">
                   <ProductLookupInput
                     value={l.product_code} placeholder="รหัส/พิมพ์ค้นหา" disabled={readOnly}
-                    matches={matchesFor(l.product_code)}
+                    matches={matchesFor(l.product_code)} totalCount={products.length}
                     onChange={val => onChangeLine(i, "product_code", val)}
                     onPick={p => pickProduct(i, p)}
                   />
@@ -129,7 +135,7 @@ export default function LineItemGroup({ categoryCode, categoryLabel, lines, prod
                 <td className="px-2 py-1">
                   <ProductLookupInput
                     value={l.product_name} placeholder="ชื่อสินค้า/พิมพ์ค้นหา" disabled={readOnly}
-                    matches={matchesFor(l.product_name)}
+                    matches={matchesFor(l.product_name)} totalCount={products.length}
                     onChange={val => onChangeLine(i, "product_name", val)}
                     onPick={p => pickProduct(i, p)}
                   />
