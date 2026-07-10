@@ -8,6 +8,8 @@ import type { SalesProduct } from "@/components/price-approval/types";
 
 const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500";
 
+const WAREHOUSES = ["บางปะอิน", "บางปะกง", "โคราช", "บางพลี", "ราชบุรี"];
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -32,7 +34,7 @@ interface FormState {
 function toFormState(row: SampleRequestRow | null, defaultName: string): FormState {
   if (!row) {
     return {
-      request_no: "", request_date: todayStr(), to_person: "หัวหน้าคลังสินค้า",
+      request_no: "", request_date: todayStr(), to_person: "",
       employee_name: defaultName, zone_province: "",
       items: [emptyItem(), emptyItem(), emptyItem()],
       reason: "", requester_name: defaultName, checked_by_name: "", approved_by_name: "",
@@ -40,7 +42,7 @@ function toFormState(row: SampleRequestRow | null, defaultName: string): FormSta
   }
   const items = parseItems(row.items);
   return {
-    request_no: row.request_no ?? "", request_date: row.request_date, to_person: row.to_person ?? "หัวหน้าคลังสินค้า",
+    request_no: row.request_no ?? "", request_date: row.request_date, to_person: row.to_person ?? "",
     employee_name: row.employee_name ?? defaultName, zone_province: row.zone_province ?? "",
     items: items.length ? items : [emptyItem(), emptyItem(), emptyItem()],
     reason: row.reason ?? "", requester_name: row.requester_name ?? defaultName,
@@ -135,7 +137,12 @@ export default function SampleRequestForm({ row, products, currentUserId, curren
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Field label="เลขที่ (ถ้ามี)"><input disabled={!canEditRequest} className={inputCls} value={form.request_no} onChange={e => setField("request_no", e.target.value)} /></Field>
             <Field label="วันที่"><input disabled={!canEditRequest} type="date" className={inputCls} value={form.request_date} onChange={e => setField("request_date", e.target.value)} /></Field>
-            <Field label="ถึง (หัวหน้าคลังสินค้า)"><input disabled={!canEditRequest} className={inputCls} value={form.to_person} onChange={e => setField("to_person", e.target.value)} /></Field>
+            <Field label="ถึง (หัวหน้าคลังสินค้า)">
+              <select disabled={!canEditRequest} className={inputCls} value={form.to_person} onChange={e => setField("to_person", e.target.value)}>
+                <option value="">เลือกคลัง</option>
+                {WAREHOUSES.map(w => <option key={w} value={w}>{w}</option>)}
+              </select>
+            </Field>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
