@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { CheckCircle, XCircle, Clock, Shield, UserCheck, Users, Briefcase, Eye, Factory } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Shield, UserCheck, Users, Briefcase, Eye, Factory, Warehouse } from "lucide-react";
 
 interface UserRow {
   id: string;
@@ -19,6 +19,7 @@ const ROLES = [
   { value: "area_head",         label: "หัวหน้าภาคการขาย", desc: "อนุมัติใบขออนุมัติราคาพิเศษ ขั้นที่ 1",                icon: Users,     color: "text-orange-600 bg-orange-50 border-orange-200" },
   { value: "marketing_manager", label: "ผจก.การตลาด",      desc: "อนุมัติใบขออนุมัติราคาพิเศษ ขั้นสุดท้าย",              icon: Briefcase, color: "text-indigo-600 bg-indigo-50 border-indigo-200" },
   { value: "factory",           label: "ฝ่ายโรงงาน/QC",    desc: "ตรวจสอบและตอบกลับใบเคลมคุณภาพ",                        icon: Factory,   color: "text-cyan-600 bg-cyan-50 border-cyan-200" },
+  { value: "warehouse",         label: "ฝ่ายคลังสินค้า",   desc: "ตรวจสอบและอนุมัติใบขอสินค้าตัวอย่าง",                  icon: Warehouse, color: "text-lime-600 bg-lime-50 border-lime-200" },
   { value: "viewer",            label: "Viewer",            desc: "ดูข้อมูลอย่างเดียว",                                   icon: Eye,       color: "text-gray-600 bg-gray-50 border-gray-200" },
 ];
 

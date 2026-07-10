@@ -12,6 +12,7 @@ import {
   X,
   FileSpreadsheet,
   FileWarning,
+  PackageSearch,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -23,6 +24,7 @@ interface SidebarProps {
 const NAV_ITEMS = [
   { href: "/price-approval", label: "ใบขออนุมัติราคาพิเศษ", icon: ClipboardCheck },
   { href: "/quality-claims", label: "ใบเคลมคุณภาพ", icon: FileWarning },
+  { href: "/sample-requests", label: "ใบขอสินค้าตัวอย่าง", icon: PackageSearch },
 ];
 
 const ROLE_LABEL: Record<string, { text: string; cls: string }> = {
@@ -31,6 +33,7 @@ const ROLE_LABEL: Record<string, { text: string; cls: string }> = {
   area_head:         { text: "หัวหน้าภาคการขาย",   cls: "bg-orange-500/20 text-orange-300" },
   marketing_manager: { text: "ผจก.การตลาด",        cls: "bg-indigo-500/20 text-indigo-300" },
   factory:           { text: "ฝ่ายโรงงาน/QC",      cls: "bg-cyan-500/20 text-cyan-300" },
+  warehouse:         { text: "ฝ่ายคลังสินค้า",     cls: "bg-lime-500/20 text-lime-300" },
   viewer:            { text: "Viewer",             cls: "bg-white/10 text-white/50" },
 };
 
