@@ -186,8 +186,8 @@ export default function SampleRequestClient({ initialRows, products, currentUser
               <button onClick={() => setViewRow(null)} className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">ปิด</button>
             </div>
           </div>
-          <div ref={containerRef} style={{ overflow: "hidden" }}>
-            <div style={{ transformOrigin: "top left", transform: `scale(${scale})`, width: scale < 1 ? `${100 / scale}%` : undefined }}>
+          <div ref={containerRef} className="print-scale-outer" style={{ overflow: "hidden" }}>
+            <div className="print-scale-wrapper" style={{ transformOrigin: "top left", transform: `scale(${scale})`, width: scale < 1 ? `${100 / scale}%` : undefined }}>
               <SampleRequestPrint doc={printDoc} />
             </div>
           </div>
