@@ -26,7 +26,7 @@ const NAV_ITEMS = [
   { href: "/price-approval", label: "ใบขออนุมัติราคาพิเศษ", icon: ClipboardCheck },
   { href: "/quality-claims", label: "ใบเคลมคุณภาพ", icon: FileWarning },
   { href: "/sample-requests", label: "ใบขอสินค้าตัวอย่าง", icon: PackageSearch },
-  { href: "/shirt-requests", label: "ขอเบิกเสื้อช่าง", icon: Shirt },
+  { href: "/shirt-requests", label: "ใบติดต่อภายใน", icon: Shirt },
 ];
 
 const ROLE_LABEL: Record<string, { text: string; cls: string }> = {

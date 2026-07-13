@@ -57,7 +57,7 @@ export default function ShirtRequestClient({ initialRows, currentUserId, current
   }
 
   async function deleteRow(r: ShirtRequestRow) {
-    if (!confirm(`ลบใบขอเบิกเสื้อช่างของ ${r.from_name ?? ""}?`)) return;
+    if (!confirm(`ลบใบติดต่อภายในของ ${r.from_name ?? ""}?`)) return;
     await supabase.from("shirt_requests").delete().eq("id", r.id);
     setRows(prev => prev.filter(x => x.id !== r.id));
   }
@@ -74,7 +74,7 @@ export default function ShirtRequestClient({ initialRows, currentUserId, current
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <h1 className="text-xl font-bold text-gray-800">ขอเบิกเสื้อช่าง</h1>
+        <h1 className="text-xl font-bold text-gray-800">ใบติดต่อภายใน</h1>
         <button onClick={() => { setEditRow(null); setFormOpen(true); }}
           className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium">
           <Plus className="w-4 h-4" /> สร้างใบขอใหม่
@@ -158,7 +158,7 @@ export default function ShirtRequestClient({ initialRows, currentUserId, current
       {viewRow && printDoc && (
         <div className="print-modal fixed inset-0 z-50 bg-white overflow-auto">
           <div className="no-print flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-200 bg-gray-50 flex-wrap gap-2">
-            <p className="font-semibold text-gray-800 text-sm">ขอเบิกเสื้อช่าง — {viewRow.from_name}</p>
+            <p className="font-semibold text-gray-800 text-sm">ใบติดต่อภายใน — {viewRow.from_name}</p>
             <div className="flex gap-2 flex-wrap">
               <button onClick={() => setTimeout(() => window.print(), 50)} className="flex items-center gap-1.5 px-3 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700">
                 <Printer className="w-4 h-4" /> พิมพ์ / PDF

@@ -100,7 +100,7 @@ export default function ShirtRequestForm({ row, currentUserId, currentUserName, 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 md:p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[95vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-800">{row ? "แก้ไขใบขอเบิกเสื้อช่าง" : "สร้างใบขอเบิกเสื้อช่าง"}</h2>
+          <h2 className="font-semibold text-gray-800">{row ? "แก้ไขใบติดต่อภายใน" : "สร้างใบติดต่อภายใน"}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
         </div>
 
