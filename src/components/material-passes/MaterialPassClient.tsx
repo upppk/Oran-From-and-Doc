@@ -6,6 +6,7 @@ import { Plus, Printer, Pencil, Trash2 } from "lucide-react";
 import MaterialPassForm from "./MaterialPassForm";
 import MaterialPassPrint from "./MaterialPassPrint";
 import { MaterialPassRow, MaterialPassStatus, STATUS_LABEL, parseItems } from "./types";
+import { WAREHOUSES } from "./MaterialPassForm";
 
 interface Props {
   initialRows: MaterialPassRow[];
@@ -23,6 +24,7 @@ export default function MaterialPassClient({ initialRows, currentUserId, current
   const supabase = createClient();
   const [rows, setRows] = useState<MaterialPassRow[]>(initialRows);
   const [statusFilter, setStatusFilter] = useState<MaterialPassStatus | "all">("all");
+  const [warehouseFilter, setWarehouseFilter] = useState<string | "all">("all");
   const [formOpen, setFormOpen] = useState(false);
   const [editRow, setEditRow] = useState<MaterialPassRow | null>(null);
   const [viewRow, setViewRow] = useState<MaterialPassRow | null>(null);
@@ -46,8 +48,9 @@ export default function MaterialPassClient({ initialRows, currentUserId, current
   const visibleRows = useMemo(() => {
     let r = rows;
     if (statusFilter !== "all") r = r.filter(x => x.status === statusFilter);
+    if (warehouseFilter !== "all") r = r.filter(x => x.destination === warehouseFilter);
     return r;
-  }, [rows, statusFilter]);
+  }, [rows, statusFilter, warehouseFilter]);
 
   function canEdit(r: MaterialPassRow) {
     return role === "admin" || role === "warehouse" || r.requester_id === currentUserId;
@@ -85,11 +88,24 @@ export default function MaterialPassClient({ initialRows, currentUserId, current
         </button>
       </div>
 
-      <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
+      <div className="flex gap-1.5 mb-2 overflow-x-auto pb-1">
         {FILTERS.map(f => (
           <button key={f} onClick={() => setStatusFilter(f)}
             className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === f ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
             {f === "all" ? "ทั้งหมด" : STATUS_LABEL[f].text}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
+        <button onClick={() => setWarehouseFilter("all")}
+          className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${warehouseFilter === "all" ? "bg-amber-600 text-white" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}>
+          ทุกคลัง
+        </button>
+        {WAREHOUSES.map(w => (
+          <button key={w} onClick={() => setWarehouseFilter(w)}
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${warehouseFilter === w ? "bg-amber-600 text-white" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}>
+            {w}
           </button>
         ))}
       </div>

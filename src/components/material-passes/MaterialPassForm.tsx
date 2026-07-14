@@ -7,6 +7,8 @@ import { PassItem, MaterialPassRow, parseItems, emptyItem } from "./types";
 
 const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500";
 
+export const WAREHOUSES = ["คลังโคราช", "คลังราชบุรี", "คลังบางพลี", "คลังบางปะอินทร์"];
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -156,7 +158,12 @@ export default function MaterialPassForm({ row, currentUserId, currentUserName, 
             <Field label="วันที่"><input disabled={!canEditRequest} type="date" className={inputCls} value={form.pass_date} onChange={e => setField("pass_date", e.target.value)} /></Field>
           </div>
 
-          <Field label="สถานที่ส่ง *"><input required disabled={!canEditRequest} className={inputCls} value={form.destination} onChange={e => setField("destination", e.target.value)} /></Field>
+          <Field label="สถานที่ส่ง (คลังปลายทาง) *">
+            <select required disabled={!canEditRequest} className={inputCls} value={form.destination} onChange={e => setField("destination", e.target.value)}>
+              <option value="">เลือกคลัง</option>
+              {WAREHOUSES.map(w => <option key={w} value={w}>{w}</option>)}
+            </select>
+          </Field>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <Field label="ทะเบียนรถที่บรรทุก"><input disabled={!canEditRequest} className={inputCls} value={form.vehicle_no} onChange={e => setField("vehicle_no", e.target.value)} /></Field>
