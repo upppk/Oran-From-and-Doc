@@ -14,6 +14,7 @@ import {
   FileWarning,
   PackageSearch,
   Shirt,
+  Truck,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { href: "/quality-claims", label: "ใบเคลมคุณภาพ", icon: FileWarning },
   { href: "/sample-requests", label: "ใบขอสินค้าตัวอย่าง", icon: PackageSearch },
   { href: "/shirt-requests", label: "ใบติดต่อภายใน", icon: Shirt },
+  { href: "/material-passes", label: "ใบผ่านวัสดุออกนอกโรงงาน", icon: Truck },
 ];
 
 const ROLE_LABEL: Record<string, { text: string; cls: string }> = {
