@@ -176,16 +176,20 @@ export default function MaterialPassForm({ row, currentUserId, currentUserName, 
               <p className="text-xs font-medium text-gray-600">รายการวัสดุ</p>
               {canEditRequest && <button type="button" onClick={addItem} className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 font-medium"><Plus className="w-3.5 h-3.5" /> เพิ่มรายการ</button>}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {form.items.map((it, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <input disabled={!canEditRequest} className={inputCls + " w-16 shrink-0"} placeholder="จำนวน" value={it.qty} onChange={e => changeItem(i, "qty", e.target.value)} />
-                  <input disabled={!canEditRequest} className={inputCls + " w-16 shrink-0"} placeholder="หน่วย" value={it.unit} onChange={e => changeItem(i, "unit", e.target.value)} />
-                  <input disabled={!canEditRequest} className={inputCls} placeholder="รายการ / ขนาด" value={it.description} onChange={e => changeItem(i, "description", e.target.value)} />
-                  <input disabled={!canEditRequest} className={inputCls + " w-28 shrink-0"} placeholder="หมายเหตุ" value={it.remark} onChange={e => changeItem(i, "remark", e.target.value)} />
-                  {canEditRequest && form.items.length > 1 && (
-                    <button type="button" onClick={() => removeItem(i)} className="text-gray-400 hover:text-red-500 shrink-0"><Trash2 className="w-4 h-4" /></button>
-                  )}
+                <div key={i} className="border border-gray-200 rounded-lg p-2.5 space-y-2">
+                  <div className="flex gap-2 items-center">
+                    <input disabled={!canEditRequest} className={inputCls} placeholder="รายการ / ขนาด (เช่น ลูกปืน 6311 SKF)" value={it.description} onChange={e => changeItem(i, "description", e.target.value)} />
+                    {canEditRequest && form.items.length > 1 && (
+                      <button type="button" onClick={() => removeItem(i)} className="text-gray-400 hover:text-red-500 shrink-0"><Trash2 className="w-4 h-4" /></button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Field label="จำนวน"><input disabled={!canEditRequest} className={inputCls} value={it.qty} onChange={e => changeItem(i, "qty", e.target.value)} /></Field>
+                    <Field label="หน่วย"><input disabled={!canEditRequest} className={inputCls} placeholder="เช่น ตัว, ม้วน, กก." value={it.unit} onChange={e => changeItem(i, "unit", e.target.value)} /></Field>
+                    <Field label="หมายเหตุ"><input disabled={!canEditRequest} className={inputCls} value={it.remark} onChange={e => changeItem(i, "remark", e.target.value)} /></Field>
+                  </div>
                 </div>
               ))}
             </div>
