@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { X, Plus, Trash2, ImagePlus, Loader2 } from "lucide-react";
 import { ClaimItem, QualityClaimRow, parseItems, emptyItem } from "./types";
 import type { SalesCustomer, SalesProduct } from "@/components/price-approval/types";
+import LookupInput from "@/components/common/LookupInput";
 
 const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500";
 
@@ -67,15 +68,11 @@ export default function QualityClaimForm({ row, customers, products, currentUser
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
-  const [custSuggest, setCustSuggest] = useState(false);
-  const [productSuggestFor, setProductSuggestFor] = useState<number | null>(null);
-
   function setField<K extends keyof FormState>(key: K, val: FormState[K]) {
     setForm(f => ({ ...f, [key]: val }));
   }
   function pickCustomer(c: SalesCustomer) {
     setForm(f => ({ ...f, customer_code: c.code, shop_name: c.name }));
-    setCustSuggest(false);
   }
   function changeItem(i: number, field: keyof ClaimItem, val: string) {
     setForm(f => { const items = [...f.items]; items[i] = { ...items[i], [field]: val }; return { ...f, items }; });
@@ -109,11 +106,9 @@ export default function QualityClaimForm({ row, customers, products, currentUser
   const canEditRequest = !row || row.submitted_by === currentUserId || role === "admin";
   const canEditFactory = role === "factory" || role === "admin";
 
-  const custMatches = custSuggest
-    ? (form.shop_name
-        ? customers.filter(c => c.code.toLowerCase().includes(form.shop_name.toLowerCase()) || c.name.toLowerCase().includes(form.shop_name.toLowerCase())).slice(0, 30)
-        : customers.slice(0, 30))
-    : [];
+  const custMatches = form.shop_name
+    ? customers.filter(c => c.code.toLowerCase().includes(form.shop_name.toLowerCase()) || c.name.toLowerCase().includes(form.shop_name.toLowerCase())).slice(0, 30)
+    : customers.slice(0, 30);
 
   async function save(markResolved: boolean) {
     setSaving(true); setErr("");
@@ -166,27 +161,15 @@ export default function QualityClaimForm({ row, customers, products, currentUser
             <Field label="เรียน"><input disabled={!canEditRequest} className={inputCls} value={form.to_person} onChange={e => setField("to_person", e.target.value)} /></Field>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Field label="สถานที่พบ (ชื่อร้าน) — พิมพ์ค้นหารหัส/ชื่อลูกค้า หรือกรอกเอง *">
-              <input required disabled={!canEditRequest} className={inputCls} value={form.shop_name}
-                onChange={e => { setField("shop_name", e.target.value); setField("customer_code", ""); setCustSuggest(true); }}
-                onFocus={() => setCustSuggest(true)}
-                onBlur={() => setTimeout(() => setCustSuggest(false), 150)} />
-              {custMatches.length > 0 && (
-                <div className="absolute z-10 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 w-full max-h-48 overflow-y-auto">
-                  {custMatches.map(c => (
-                    <button type="button" key={c.id} onMouseDown={() => pickCustomer(c)}
-                      className="block w-full text-left px-3 py-2 hover:bg-gray-50 text-sm">
-                      <span className="font-mono font-medium">{c.code}</span> — {c.name}
-                    </button>
-                  ))}
-                  {customers.length > custMatches.length && (
-                    <p className="px-3 py-1.5 text-[11px] text-gray-400 border-t border-gray-100">
-                      แสดง {custMatches.length} จากทั้งหมด {customers.length.toLocaleString("th-TH")} รายการ — พิมพ์เพื่อค้นหาให้ตรงมากขึ้น
-                    </p>
-                  )}
-                </div>
-              )}
+              <LookupInput
+                className={inputCls} value={form.shop_name} disabled={!canEditRequest}
+                matches={custMatches} totalCount={customers.length}
+                onChange={val => { setField("shop_name", val); setField("customer_code", ""); }}
+                onPick={pickCustomer}
+                renderItem={c => (<><span className="font-mono font-medium">{c.code}</span> — {c.name}</>)}
+              />
             </Field>
             <Field label="โทร"><input disabled={!canEditRequest} className={inputCls} value={form.shop_phone} onChange={e => setField("shop_phone", e.target.value)} /></Field>
           </div>
@@ -200,33 +183,20 @@ export default function QualityClaimForm({ row, customers, products, currentUser
             </div>
             <div className="space-y-2">
               {form.items.map((it, i) => {
-                const productMatches = productSuggestFor === i
-                  ? (it.product_name
-                      ? products.filter(p => p.code.toLowerCase().includes(it.product_name.toLowerCase()) || p.name.toLowerCase().includes(it.product_name.toLowerCase())).slice(0, 30)
-                      : products.slice(0, 30))
-                  : [];
+                const productMatches = it.product_name
+                  ? products.filter(p => p.code.toLowerCase().includes(it.product_name.toLowerCase()) || p.name.toLowerCase().includes(it.product_name.toLowerCase())).slice(0, 30)
+                  : products.slice(0, 30);
                 return (
                 <div key={i} className="flex gap-2 items-center">
-                  <div className="flex-1 min-w-0 relative">
-                    <input disabled={!canEditRequest} className={inputCls} placeholder="พิมพ์ค้นหารหัส/ชื่อสินค้า หรือกรอกเอง" value={it.product_name}
-                      onChange={e => { changeItem(i, "product_name", e.target.value); setProductSuggestFor(i); }}
-                      onFocus={() => setProductSuggestFor(i)}
-                      onBlur={() => setTimeout(() => setProductSuggestFor(s => s === i ? null : s), 150)} />
-                    {productMatches.length > 0 && (
-                      <div className="absolute z-10 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 w-full max-h-48 overflow-y-auto">
-                        {productMatches.map(p => (
-                          <button type="button" key={p.id} onMouseDown={() => { changeItem(i, "product_name", p.name); setProductSuggestFor(null); }}
-                            className="block w-full text-left px-3 py-2 hover:bg-gray-50 text-sm">
-                            <span className="font-mono font-medium">{p.code}</span> — {p.name}
-                          </button>
-                        ))}
-                        {products.length > productMatches.length && (
-                          <p className="px-3 py-1.5 text-[11px] text-gray-400 border-t border-gray-100">
-                            แสดง {productMatches.length} จากทั้งหมด {products.length.toLocaleString("th-TH")} รายการ — พิมพ์เพื่อค้นหาให้ตรงมากขึ้น
-                          </p>
-                        )}
-                      </div>
-                    )}
+                  <div className="flex-1 min-w-0">
+                    <LookupInput
+                      className={inputCls} value={it.product_name} disabled={!canEditRequest}
+                      placeholder="พิมพ์ค้นหารหัส/ชื่อสินค้า หรือกรอกเอง"
+                      matches={productMatches} totalCount={products.length}
+                      onChange={val => changeItem(i, "product_name", val)}
+                      onPick={p => changeItem(i, "product_name", p.name)}
+                      renderItem={p => (<><span className="font-mono font-medium">{p.code}</span> — {p.name}</>)}
+                    />
                   </div>
                   <input disabled={!canEditRequest} className={inputCls + " w-20 md:w-28 text-right shrink-0"} placeholder="จำนวน" value={it.qty} onChange={e => changeItem(i, "qty", e.target.value)} />
                   {canEditRequest && form.items.length > 1 && (

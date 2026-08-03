@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { X, Plus } from "lucide-react";
 import LineItemGroup from "./LineItemGroup";
+import LookupInput from "@/components/common/LookupInput";
 import {
   LineItemForm, SalesProduct, SalesCustomer, PriceApprovalRow,
   computeTotals, emptyLine,
@@ -77,7 +78,6 @@ export default function PriceApprovalForm({ row, products, customers, currentUse
   const [form, setForm] = useState<FormState>(() => toFormState(row, currentUserName));
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
-  const [custSuggest, setCustSuggest] = useState(false);
 
   const allLines = form.groups.flatMap(g => g.lines);
   const totals = computeTotals(allLines);
@@ -93,7 +93,6 @@ export default function PriceApprovalForm({ row, products, customers, currentUse
       credit_days: c.credit_days != null ? String(c.credit_days) : f.credit_days,
       freight_rate_baht_per_ton: c.freight_baht_per_ton != null ? String(c.freight_baht_per_ton) : f.freight_rate_baht_per_ton,
     }));
-    setCustSuggest(false);
   }
 
   function changeLine(gi: number, li: number, field: keyof LineItemForm, val: string) {
@@ -183,11 +182,9 @@ export default function PriceApprovalForm({ row, products, customers, currentUse
     onSaved(resp.data as PriceApprovalRow);
   }
 
-  const custMatches = custSuggest
-    ? (form.customer_code
-        ? customers.filter(c => c.code.toLowerCase().includes(form.customer_code.toLowerCase()) || c.name.toLowerCase().includes(form.customer_code.toLowerCase())).slice(0, 30)
-        : customers.slice(0, 30))
-    : [];
+  const custMatches = form.customer_code
+    ? customers.filter(c => c.code.toLowerCase().includes(form.customer_code.toLowerCase()) || c.name.toLowerCase().includes(form.customer_code.toLowerCase())).slice(0, 30)
+    : customers.slice(0, 30);
 
   const editable = !row || row.status === "draft" || row.status === "rejected";
 
@@ -216,27 +213,15 @@ export default function PriceApprovalForm({ row, products, customers, currentUse
 
           <Field label="ชื่อพนักงาน"><input disabled={!editable} className={inputCls} value={form.salesperson_name} onChange={e => setField("salesperson_name", e.target.value)} /></Field>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Field label="รหัสลูกค้า (พิมพ์ค้นหา หรือกรอกเอง)">
-              <input disabled={!editable} className={inputCls} value={form.customer_code}
-                onChange={e => { setField("customer_code", e.target.value); setCustSuggest(true); }}
-                onFocus={() => setCustSuggest(true)}
-                onBlur={() => setTimeout(() => setCustSuggest(false), 150)} />
-              {custMatches.length > 0 && (
-                <div className="absolute z-10 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 w-full max-h-48 overflow-y-auto">
-                  {custMatches.map(c => (
-                    <button type="button" key={c.id} onMouseDown={() => pickCustomer(c)}
-                      className="block w-full text-left px-3 py-2 hover:bg-gray-50 text-sm">
-                      <span className="font-mono font-medium">{c.code}</span> — {c.name}
-                    </button>
-                  ))}
-                  {customers.length > custMatches.length && (
-                    <p className="px-3 py-1.5 text-[11px] text-gray-400 border-t border-gray-100">
-                      แสดง {custMatches.length} จากทั้งหมด {customers.length.toLocaleString("th-TH")} รายการ — พิมพ์เพื่อค้นหาให้ตรงมากขึ้น
-                    </p>
-                  )}
-                </div>
-              )}
+              <LookupInput
+                className={inputCls} value={form.customer_code} disabled={!editable}
+                matches={custMatches} totalCount={customers.length}
+                onChange={val => setField("customer_code", val)}
+                onPick={pickCustomer}
+                renderItem={c => (<><span className="font-mono font-medium">{c.code}</span> — {c.name}</>)}
+              />
             </Field>
             <Field label="ชื่อลูกค้า *"><input required disabled={!editable} className={inputCls} value={form.customer_name} onChange={e => setField("customer_name", e.target.value)} /></Field>
           </div>
