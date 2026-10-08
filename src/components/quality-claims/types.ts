@@ -1,5 +1,8 @@
 export type QualityClaimStatus = "pending" | "resolved";
 
+// ความเห็นหัวหน้าฝ่ายการตลาด: เห็นควรดำเนินการต่อ / ไม่เข้าเงื่อนไขหรือข้อกำหนด
+export type MarketingOpinion = "proceed" | "not_eligible";
+
 export interface ClaimItem {
   product_name: string;
   qty: string;
@@ -30,6 +33,10 @@ export interface QualityClaimRow {
   resolved_at: string | null;
   created_at: string;
   photo_urls: string[] | null;
+  marketing_opinion: MarketingOpinion | null;
+  marketing_opinion_reason: string | null;
+  marketing_opinion_by: string | null;
+  marketing_opinion_at: string | null;
 }
 
 export const STATUS_LABEL: Record<QualityClaimStatus, { text: string; cls: string }> = {

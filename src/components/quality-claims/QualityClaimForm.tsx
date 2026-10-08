@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { X, Plus, Trash2, ImagePlus, Loader2 } from "lucide-react";
-import { ClaimItem, QualityClaimRow, parseItems, emptyItem } from "./types";
+import { ClaimItem, QualityClaimRow, MarketingOpinion, parseItems, emptyItem } from "./types";
 import type { SalesCustomer, SalesProduct } from "@/components/price-approval/types";
 import LookupInput from "@/components/common/LookupInput";
 
@@ -26,6 +26,7 @@ interface FormState {
   items: ClaimItem[];
   roof_type: string; structure: string; damage_desc: string; damage_qty: string; purpose: string;
   factory_comment: string;
+  marketing_opinion: MarketingOpinion | ""; marketing_opinion_reason: string;
   submitted_by_name: string; print_date: string;
 }
 
@@ -36,7 +37,8 @@ function toFormState(row: QualityClaimRow | null, defaultName: string): FormStat
       customer_code: "", shop_name: "", shop_phone: "", shop_address: "", department: "",
       items: [emptyItem(), emptyItem(), emptyItem()],
       roof_type: "", structure: "", damage_desc: "", damage_qty: "", purpose: "",
-      factory_comment: "", submitted_by_name: defaultName, print_date: todayStr(),
+      factory_comment: "", marketing_opinion: "", marketing_opinion_reason: "",
+      submitted_by_name: defaultName, print_date: todayStr(),
     };
   }
   const items = parseItems(row.items);
@@ -46,7 +48,9 @@ function toFormState(row: QualityClaimRow | null, defaultName: string): FormStat
     shop_name: row.shop_name ?? "", shop_phone: row.shop_phone ?? "", shop_address: row.shop_address ?? "", department: row.department ?? "",
     items: items.length ? items : [emptyItem(), emptyItem(), emptyItem()],
     roof_type: row.roof_type ?? "", structure: row.structure ?? "", damage_desc: row.damage_desc ?? "", damage_qty: row.damage_qty ?? "", purpose: row.purpose ?? "",
-    factory_comment: row.factory_comment ?? "", submitted_by_name: row.submitted_by_name ?? defaultName, print_date: row.print_date ?? todayStr(),
+    factory_comment: row.factory_comment ?? "",
+    marketing_opinion: row.marketing_opinion ?? "", marketing_opinion_reason: row.marketing_opinion_reason ?? "",
+    submitted_by_name: row.submitted_by_name ?? defaultName, print_date: row.print_date ?? todayStr(),
   };
 }
 
@@ -105,6 +109,7 @@ export default function QualityClaimForm({ row, customers, products, currentUser
 
   const canEditRequest = !row || row.submitted_by === currentUserId || role === "admin";
   const canEditFactory = role === "factory" || role === "admin";
+  const canEditMarketing = role === "marketing_manager" || role === "admin";
 
   const custMatches = form.shop_name
     ? customers.filter(c => c.code.toLowerCase().includes(form.shop_name.toLowerCase()) || c.name.toLowerCase().includes(form.shop_name.toLowerCase())).slice(0, 30)
@@ -127,6 +132,20 @@ export default function QualityClaimForm({ row, customers, products, currentUser
       photo_urls: photoUrls,
       updated_at: new Date().toISOString(),
     };
+    // Only marketing/admin may write the marketing-head opinion; stamp who/when only when it actually changed.
+    if (canEditMarketing) {
+      payload.marketing_opinion = form.marketing_opinion || null;
+      payload.marketing_opinion_reason = form.marketing_opinion_reason || null;
+      const changed = (row?.marketing_opinion ?? "") !== form.marketing_opinion
+        || (row?.marketing_opinion_reason ?? "") !== form.marketing_opinion_reason;
+      if (!form.marketing_opinion && !form.marketing_opinion_reason) {
+        payload.marketing_opinion_by = null;
+        payload.marketing_opinion_at = null;
+      } else if (changed || !row?.marketing_opinion_at) {
+        payload.marketing_opinion_by = currentUserId;
+        payload.marketing_opinion_at = new Date().toISOString();
+      }
+    }
     if (markResolved) {
       payload.status = "resolved";
       payload.resolved_by = currentUserId;
@@ -250,8 +269,30 @@ export default function QualityClaimForm({ row, customers, products, currentUser
           <Field label="วัตถุประสงค์"><textarea disabled={!canEditRequest} className={inputCls} rows={2} value={form.purpose} onChange={e => setField("purpose", e.target.value)} /></Field>
           <Field label="ลงชื่อ (ผู้แจ้ง)"><input disabled={!canEditRequest} className={inputCls} value={form.submitted_by_name} onChange={e => setField("submitted_by_name", e.target.value)} /></Field>
 
+          <div className="border border-gray-200 rounded-lg p-3 space-y-3">
+            <p className="text-sm font-semibold text-gray-700">ความเห็นหัวหน้าฝ่ายการตลาด</p>
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              {([
+                ["proceed", "เห็นควรดำเนินการต่อ"],
+                ["not_eligible", "ไม่เข้าเงื่อนไขหรือข้อกำหนด"],
+              ] as const).map(([value, label]) => (
+                <label key={value} className={`flex items-center gap-2 text-sm ${canEditMarketing ? "cursor-pointer" : "opacity-60"}`}>
+                  <input type="checkbox" className="w-4 h-4 accent-amber-600" disabled={!canEditMarketing}
+                    checked={form.marketing_opinion === value}
+                    onChange={() => setField("marketing_opinion", form.marketing_opinion === value ? "" : value)} />
+                  {label}
+                </label>
+              ))}
+            </div>
+            <Field label="เนื่องจาก...">
+              <textarea disabled={!canEditMarketing} className={inputCls} rows={3} value={form.marketing_opinion_reason}
+                placeholder={canEditMarketing ? "ระบุเหตุผล..." : "รอหัวหน้าฝ่ายการตลาดให้ความเห็น"}
+                onChange={e => setField("marketing_opinion_reason", e.target.value)} />
+            </Field>
+          </div>
+
           <div className="border-t border-gray-100 pt-3">
-            <Field label="ความเห็นของโรงงาน (หลังการตรวจสอบ)">
+            <Field label="ผลการตรวจสอบจากโรงงาน (หลังการตรวจสอบ)">
               <textarea disabled={!canEditFactory} className={inputCls} rows={5} value={form.factory_comment}
                 placeholder={canEditFactory ? "กรอกผลตรวจสอบ..." : "รอฝ่ายโรงงาน/QC ตรวจสอบ"}
                 onChange={e => setField("factory_comment", e.target.value)} />
@@ -260,10 +301,10 @@ export default function QualityClaimForm({ row, customers, products, currentUser
         </div>
 
         <div className="flex gap-2 px-5 py-3 border-t border-gray-100">
-          {canEditRequest && (
+          {(canEditRequest || canEditMarketing) && (
             <button type="button" disabled={saving} onClick={() => save(false)}
               className="flex-1 border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium rounded-lg py-2.5 text-sm transition-colors">
-              {saving ? "กำลังบันทึก..." : "บันทึก"}
+              {saving ? "กำลังบันทึก..." : canEditRequest ? "บันทึก" : "บันทึกความเห็น"}
             </button>
           )}
           {canEditFactory && row?.status !== "resolved" && (

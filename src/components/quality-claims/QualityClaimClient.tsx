@@ -54,7 +54,7 @@ export default function QualityClaimClient({ initialRows, customers, products, c
   }, [rows, statusFilter]);
 
   function canEdit(r: QualityClaimRow) {
-    return role === "admin" || role === "factory" || r.submitted_by === currentUserId;
+    return role === "admin" || role === "factory" || role === "marketing_manager" || r.submitted_by === currentUserId;
   }
   function canDelete(r: QualityClaimRow) {
     return role === "admin" || (r.submitted_by === currentUserId && r.status === "pending");
@@ -76,6 +76,10 @@ export default function QualityClaimClient({ initialRows, customers, products, c
     resolved_by_name: viewRow.resolved_by ? (userNames[viewRow.resolved_by] ?? "") : null,
     resolved_at: viewRow.resolved_at,
     photo_urls: viewRow.photo_urls,
+    marketing_opinion: viewRow.marketing_opinion,
+    marketing_opinion_reason: viewRow.marketing_opinion_reason,
+    marketing_opinion_by_name: viewRow.marketing_opinion_by ? (userNames[viewRow.marketing_opinion_by] ?? "") : null,
+    marketing_opinion_at: viewRow.marketing_opinion_at,
   } : null;
 
   const FILTERS: (QualityClaimStatus | "all")[] = ["all", "pending", "resolved"];

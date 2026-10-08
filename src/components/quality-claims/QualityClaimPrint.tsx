@@ -18,6 +18,10 @@ export interface QualityClaimDoc {
   damage_qty: string | null;
   purpose: string | null;
   factory_comment: string | null;
+  marketing_opinion?: "proceed" | "not_eligible" | null;
+  marketing_opinion_reason?: string | null;
+  marketing_opinion_by_name?: string | null;
+  marketing_opinion_at?: string | null;
   submitted_by_name: string | null;
   print_date: string | null;
   status: string;
@@ -36,9 +40,27 @@ function fmtDate(s: string | null | undefined) {
 const dotted: React.CSSProperties = { borderBottom: "1px dotted #000", flex: 1, minHeight: "1.3em", padding: "0 2mm" };
 const rowLabel: React.CSSProperties = { display: "flex", alignItems: "baseline", gap: "2mm", marginBottom: "2.5mm" };
 
+function CheckBox({ checked }: { checked: boolean }) {
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", justifyContent: "center",
+      width: "6mm", height: "6mm", border: "1px solid #000", fontSize: "13pt", lineHeight: 1,
+      fontWeight: "bold", verticalAlign: "middle",
+    }}>{checked ? "✓" : ""}</span>
+  );
+}
+
+function fmtDateTimeShort(s: string | null | undefined) {
+  if (!s) return "";
+  const d = new Date(s);
+  return `${d.getDate()}/${d.getMonth() + 1}/${(d.getFullYear() + 543) % 100}`;
+}
+
 export default function QualityClaimPrint({ doc }: { doc: QualityClaimDoc }) {
   const factoryLines = (doc.factory_comment || "").split("\n");
   const commentLines = Array.from({ length: Math.max(6, factoryLines.length) }, (_, i) => factoryLines[i] || "");
+  const opinionLines = (doc.marketing_opinion_reason || "").split("\n");
+  const reasonLines = Array.from({ length: Math.max(4, opinionLines.length) }, (_, i) => opinionLines[i] || "");
 
   return (
     <div style={{
@@ -96,6 +118,30 @@ export default function QualityClaimPrint({ doc }: { doc: QualityClaimDoc }) {
         </div>
       </div>
 
+      {/* ── ความเห็นหัวหน้าฝ่ายการตลาด ── */}
+      <div style={{ marginTop: "4mm", fontSize: "12.5pt" }}>
+        <div style={{ fontWeight: "bold", marginBottom: "2mm" }}>ความเห็นหัวหน้าฝ่ายการตลาด</div>
+        <div style={{ display: "flex", gap: "14mm", marginLeft: "8mm", marginBottom: "2mm", alignItems: "center" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "2mm", fontWeight: "bold" }}>
+            <CheckBox checked={doc.marketing_opinion === "proceed"} /> เห็นควรดำเนินการต่อ
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "2mm", fontWeight: "bold" }}>
+            <CheckBox checked={doc.marketing_opinion === "not_eligible"} /> ไม่เข้าเงื่อนไขหรือข้อกำหนด
+          </span>
+        </div>
+        <div style={{ fontWeight: "bold", marginBottom: "1mm" }}>เนื่องจาก :</div>
+        {reasonLines.map((line, i) => (
+          <div key={i} style={{ display: "flex", gap: "2mm", marginTop: "1mm", marginLeft: "8mm" }}>
+            <span>:</span><span style={dotted}>{line}</span>
+          </div>
+        ))}
+        {(doc.marketing_opinion_by_name || doc.marketing_opinion_at) && (
+          <div style={{ textAlign: "right", fontSize: "11pt", marginTop: "2mm" }}>
+            {doc.marketing_opinion_by_name || ""} &nbsp; {fmtDateTimeShort(doc.marketing_opinion_at)}
+          </div>
+        )}
+      </div>
+
       {doc.photo_urls && doc.photo_urls.length > 0 && (
         <div style={{ marginTop: "4mm" }}>
           <div style={{ fontWeight: "bold", marginBottom: "2mm" }}>รูปภาพประกอบ</div>
@@ -108,7 +154,7 @@ export default function QualityClaimPrint({ doc }: { doc: QualityClaimDoc }) {
         </div>
       )}
 
-      <div style={{ marginTop: "3mm" }}><strong>ความเห็นของโรงงาน (หลังการตรวจสอบ)</strong></div>
+      <div style={{ marginTop: "3mm" }}><strong>ผลการตรวจสอบจากโรงงาน (หลังการตรวจสอบ)</strong></div>
       <div style={{ fontSize: "12.5pt" }}>
         {commentLines.map((line, i) => (
           <div key={i} style={{ display: "flex", gap: "2mm", marginTop: "1mm" }}>
